@@ -1,3 +1,4 @@
+cordova.define("cordova-plugin-applovin-max.AppLovinMAX", function(require, exports, module) {
 var exec = require('cordova/exec');
 var cordova = require('cordova');
 
@@ -232,7 +233,9 @@ var AppLovinMAX = {
     updateBannerPosition: function (adUnitId, bannerPosition) {
         callNative('updateBannerPosition', [adUnitId, bannerPosition]);
     },
-
+	 updateBannerMargins: function (adUnitId, margins) {
+        callNative('updateBannerMargins', [adUnitId, margins]);
+    },
     setBannerExtraParameter: function (adUnitId, key, value) {
         callNative('setBannerExtraParameter', [adUnitId, key, value]);
     },
@@ -370,3 +373,5 @@ window.addEventListener('OnRewardedAdFailedToDisplayEvent', function (adInfo) {
 if (typeof module !== undefined && module.exports) {
     module.exports = AppLovinMAX;
 }
+
+});
