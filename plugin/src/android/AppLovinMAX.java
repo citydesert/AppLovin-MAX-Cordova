@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Iterator;
 
 import androidx.annotation.Nullable;
 
@@ -93,7 +94,7 @@ public class AppLovinMAX
     private final Map<String, String>      mAdViewPositions            = new HashMap<>( 2 );
     private final Map<String, MaxAdFormat> mVerticalAdViewFormats      = new HashMap<>( 2 );
     private final List<String>             mAdUnitIdsToShowAfterCreate = new ArrayList<>( 2 );
-
+	private final Map<String, Integer> mMargins				       = new HashMap<>( 2 );
     private Activity getCurrentActivity() { return cordova.getActivity(); }
 
     public AppLovinMAX() { }
@@ -120,7 +121,10 @@ public class AppLovinMAX
         }
 
         isPluginInitialized = true;
-
+			mMargins.put("left",0);
+			mMargins.put("top",0);
+			mMargins.put("right",0);
+			mMargins.put("bottom",33);
         d( "Initializing AppLovin MAX Cordova v" + pluginVersion + "..." );
 
         // If SDK key passed in is empty, check Android Manifest
@@ -549,6 +553,10 @@ public class AppLovinMAX
     {
         updateAdViewPosition( adUnitId, bannerPosition, getDeviceSpecificBannerAdViewAdFormat(), callbackContext );
     }
+	public void updateBannerMargins(final String adUnitId, final Map<String,Integer> margins, final CallbackContext callbackContext)
+    {
+        updateAdViewMargins( adUnitId, margins, getDeviceSpecificBannerAdViewAdFormat(), callbackContext );
+    }
 
     public void setBannerExtraParameter(final String adUnitId, final String key, final String value, final CallbackContext callbackContext)
     {
@@ -921,7 +929,8 @@ public class AppLovinMAX
             }
 
             adView.loadAd();
-
+			
+			
             // The publisher may have requested to show the banner before it was created. Now that the banner is created, show it.
             if ( mAdUnitIdsToShowAfterCreate.contains( adUnitId ) )
             {
@@ -973,6 +982,42 @@ public class AppLovinMAX
             mAdViewPositions.put( adUnitId, adViewPosition );
             positionAdView( adUnitId, adFormat );
 
+            callbackContext.success();
+        } );
+    }
+	
+	private void updateAdViewMargins(final String adUnitId, final Map<String,Integer> margins, final MaxAdFormat adFormat, final CallbackContext callbackContext)
+    {
+        getCurrentActivity().runOnUiThread( () -> {
+
+            d( "Updating " + adFormat.getLabel() + " margins to \"" + margins + "\" for ad unit id \"" + adUnitId + "\"" );
+
+			if(margins==null){return;}
+		   
+			
+			if(margins.get("left")!=null ){
+				mMargins.remove("left");
+				mMargins.put("left",AppLovinSdkUtils.dpToPx( getCurrentActivity(), margins.get("left") ));
+			}
+			if(margins.get("top")!=null ){
+				mMargins.remove("top");
+				mMargins.put("top",AppLovinSdkUtils.dpToPx( getCurrentActivity(), margins.get("top") ));
+			}
+			if(margins.get("right")!=null ){
+				mMargins.remove("right");
+				mMargins.put("right",AppLovinSdkUtils.dpToPx( getCurrentActivity(), margins.get("right") ));
+			}
+			if(margins.get("bottom")!=null ){
+				mMargins.remove("bottom");
+				mMargins.put("bottom",AppLovinSdkUtils.dpToPx( getCurrentActivity(), margins.get("bottom") ));
+			}
+			
+		
+			final MaxAdView adView = retrieveAdView( adUnitId, adFormat );
+			
+			positionAdView( adUnitId, adFormat );
+
+            
             callbackContext.success();
         } );
     }
@@ -1219,8 +1264,9 @@ public class AppLovinMAX
 
         // Reset rotation, translation and margins so that the banner can be positioned again
         adView.setRotation( 0 );
-        adView.setTranslationX( 0 );
-        params.setMargins( 0, 0, 0, 0 );
+        adView.setTranslationX( 0 );	
+		params.setMargins( mMargins.get("left"), mMargins.get("top"), mMargins.get("right"), mMargins.get("bottom"));
+		
         mVerticalAdViewFormats.remove( adUnitId );
 
         if ( "centered".equalsIgnoreCase( adViewPosition ) )
@@ -1588,6 +1634,22 @@ public class AppLovinMAX
             String adUnitId = args.getString( 0 );
             String position = args.getString( 1 );
             updateBannerPosition( adUnitId, position, callbackContext );
+        }
+		else if ( "updateBannerMargins".equalsIgnoreCase( action ) )
+        {
+            String adUnitId = args.getString( 0 );
+			Map<String,Integer> margins = new HashMap<String,Integer>();
+			
+			JSONObject Jmargins = args.getJSONObject(1);
+			Iterator<?> keys = Jmargins.keys();
+			while(keys.hasNext()){
+				String key = (String)keys.next();
+				Integer value = Jmargins.getInt(key);
+				margins.put(key,value);
+			}
+			
+            
+            updateBannerMargins( adUnitId, margins, callbackContext );
         }
         else if ( "setBannerExtraParameter".equalsIgnoreCase( action ) )
         {
